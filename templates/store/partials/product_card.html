@@ -1,0 +1,76 @@
+{% load humanize %}
+<div class="product-card">
+    <div class="product-image-wrapper">
+        {% if product.images.first %}
+        <img src="{{ product.images.first.image.url }}" class="card-img-top" alt="{{ product.title }}" loading="lazy" />
+        {% else %}
+        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+            <i class="bi bi-image" style="font-size: 3rem;"></i>
+        </div>
+        {% endif %}
+        
+        {% if product.is_trending %}
+        <span class="product-badge trending">
+            <i class="bi bi-fire"></i> Trending
+        </span>
+        {% endif %}
+        
+        {% if product.old_price %}
+        <span class="product-badge sale">
+            <i class="bi bi-tag"></i> Sale
+        </span>
+        {% endif %}
+    </div>
+    
+    <div class="product-card-body">
+        <a href="{% url 'store:product_detail' product.slug %}" class="product-title text-decoration-none">
+            {{ product.title }}
+        </a>
+        
+        {% if product.tags.exists %}
+        <div class="mb-2">
+            {% for tag in product.tags.all|slice:":2" %}
+            <span class="badge bg-light text-dark me-1" style="font-size: 0.7rem;">{{ tag.name }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="product-price">
+            <span class="product-price-current">₹{{ product.current_price|floatformat:2|intcomma }}</span>
+            {% if product.old_price %}
+            <span class="product-price-old">₹{{ product.old_price|floatformat:2|intcomma }}</span>
+            <span class="product-discount">-{{ product.discount_percentage|floatformat:0 }}%</span>
+            {% endif %}
+        </div>
+        
+        {% if product.stock <= 5 and product.stock > 0 %}
+        <div class="mb-2">
+            <small class="text-warning">
+                <i class="bi bi-exclamation-triangle"></i> Only {{ product.stock }} left!
+            </small>
+        </div>
+        {% elif product.stock == 0 %}
+        <div class="mb-2">
+            <small class="text-danger">
+                <i class="bi bi-x-circle"></i> Out of Stock
+            </small>
+        </div>
+        {% endif %}
+        
+        <div class="product-actions">
+            <a href="{% url 'store:product_detail' product.slug %}" class="btn btn-outline-primary btn-sm flex-fill">
+                <i class="bi bi-eye"></i> View
+            </a>
+            {% if product.stock > 0 %}
+            <form method="post" action="{% url 'cart:add' product.id %}" class="d-inline flex-fill">
+                {% csrf_token %}
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-cart-plus"></i> Add
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+

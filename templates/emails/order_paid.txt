@@ -1,0 +1,13 @@
+Hi {{ order.user.first_name|default:order.user.username }},
+
+Good news! We successfully received your payment for order #{{ order.id }}.
+
+Total paid: ₹{{ order.total }}
+Payment status: {{ order.payment_status|title }}
+
+We'll share tracking info as soon as it ships.
+
+Need help? Reply to this email anytime.
+
+— The {{ app_name }} Team
+

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Storefront - E-Shop{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+{% if not request.GET.q %}
+<div class="hero-section mb-5 rounded-4 p-5 text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-3">Welcome to E-Shop</h1>
+            <p class="lead mb-4">Discover amazing products at unbeatable prices. Shop the latest trends and find everything you need in one place.</p>
+            <a href="#products" class="btn btn-light btn-lg">
+                <i class="bi bi-arrow-down"></i> Shop Now
+            </a>
+        </div>
+        <div class="col-lg-6 text-center">
+            <i class="bi bi-bag-heart" style="font-size: 8rem; opacity: 0.3;"></i>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row" id="products">
+    <!-- Filters Sidebar -->
+    <div class="col-lg-3 mb-4">
+        <div class="filter-sidebar">
+            <h5 class="filter-header">
+                <i class="bi bi-funnel"></i> Filters
+            </h5>
+            <form method="get" id="filter-form">
+                <div class="mb-3">
+                    <label for="id_q" class="form-label">Search</label>
+                    <input type="text" name="q" id="id_q" class="form-control" value="{{ filter_form.q.value|default:'' }}" placeholder="Search products...">
+                </div>
+                
+                {% if categories %}
+                <div class="mb-3">
+                    <label class="form-label">Category</label>
+                    <div class="d-flex flex-column gap-2">
+                        {% for category in categories %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="category" id="cat_{{ category.slug }}" value="{{ category.slug }}" 
+                                   {% if request.GET.category == category.slug %}checked{% endif %}>
+                            <label class="form-check-label" for="cat_{{ category.slug }}">
+                                {{ category.name }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="category" id="cat_all" value="" 
+                                   {% if not request.GET.category %}checked{% endif %}>
+                            <label class="form-check-label" for="cat_all">
+                                All Categories
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <label for="id_min_price" class="form-label">Min Price</label>
+                    <input type="number" name="min_price" id="id_min_price" class="form-control" value="{{ filter_form.min_price.value|default:'' }}" placeholder="₹0" step="0.01">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_max_price" class="form-label">Max Price</label>
+                    <input type="number" name="max_price" id="id_max_price" class="form-control" value="{{ filter_form.max_price.value|default:'' }}" placeholder="₹10000" step="0.01">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_ordering" class="form-label">Sort By</label>
+                    <select name="ordering" id="id_ordering" class="form-select">
+                        <option value="-created_at" {% if filter_form.ordering.value == '-created_at' or not filter_form.ordering.value %}selected{% endif %}>Latest</option>
+                        <option value="price" {% if filter_form.ordering.value == 'price' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="-price" {% if filter_form.ordering.value == '-price' %}selected{% endif %}>Price: High to Low</option>
+                        <option value="-is_trending" {% if filter_form.ordering.value == '-is_trending' %}selected{% endif %}>Trending</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 mb-2">
+                    <i class="bi bi-funnel-fill"></i> Apply Filters
+                </button>
+                <a href="{% url 'store:home' %}" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Products Grid -->
+    <div class="col-lg-9">
+        {% if request.GET.q %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">
+                <i class="bi bi-search"></i> Search Results
+                <small class="text-muted">({{ products|length }} products)</small>
+            </h2>
+        </div>
+        {% elif trending_products %}
+        <div class="mb-4">
+            <h3 class="mb-3">
+                <i class="bi bi-fire text-danger"></i> Trending Products
+            </h3>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-5">
+                {% for product in trending_products|slice:":4" %}
+                <div class="col">
+                    {% include 'store/partials/product_card.html' %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="mb-0">
+                {% if request.GET.q %}Search Results{% else %}All Products{% endif %}
+            </h3>
+            <span class="text-muted">{{ products|length }} products</span>
+        </div>
+        
+        {% if products %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for product in products %}
+            <div class="col fade-in">
+                {% include 'store/partials/product_card.html' %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-5">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h4>No products found</h4>
+            <p>Try adjusting your filters or search terms.</p>
+            <a href="{% url 'store:home' %}" class="btn btn-primary">
+                <i class="bi bi-arrow-left"></i> View All Products
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

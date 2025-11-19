@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Checkout{% endblock %}
+{% block extra_head %}
+<meta name="stripe-public-key" content="{{ stripe_public_key }}">
+<meta name="razorpay-key" content="{{ razorpay_key_id }}">
+{% endblock %}
+{% block content %}
+<h1 class="mb-4">Checkout</h1>
+<div class="row">
+    <div class="col-lg-7">
+        <form id="checkout-form" method="post" class="card" data-checkout-endpoint="{% url 'orders:checkout' %}">
+            <div class="card-body">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Shipping Address</label>
+                    <select class="form-select" name="address_id" required>
+                        {% for address in addresses %}
+                        <option value="{{ address.id }}">{{ address.full_name }} — {{ address.city }}, {{ address.state }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Manage addresses from your profile page.</small>
+                </div>
+                <div class="mb-3 row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Coupon code</label>
+                        <input type="text" name="coupon_code" class="form-control" placeholder="WELCOME10" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Delivery fee</label>
+                        <input type="number" step="0.01" name="delivery_fee" class="form-control" value="0" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Payment method</label>
+                    <div class="list-group">
+                        <label class="list-group-item">
+                            <input class="form-check-input me-2" type="radio" name="payment_method" value="cod" checked>
+                            Cash on Delivery
+                        </label>
+                        <label class="list-group-item {% if not stripe_public_key %}disabled{% endif %}">
+                            <input class="form-check-input me-2" type="radio" name="payment_method" value="stripe" {% if not stripe_public_key %}disabled{% endif %}>
+                            Stripe (cards)
+                            {% if not stripe_public_key %}
+                            <span class="badge bg-warning ms-2">Configure STRIPE_PUBLIC_KEY to enable</span>
+                            {% endif %}
+                        </label>
+                        <label class="list-group-item {% if not razorpay_key_id %}disabled{% endif %}">
+                            <input class="form-check-input me-2" type="radio" name="payment_method" value="razorpay" {% if not razorpay_key_id %}disabled{% endif %}>
+                            Razorpay (UPI / Netbanking / Cards)
+                            {% if not razorpay_key_id %}
+                            <span class="badge bg-warning ms-2">Configure RAZORPAY_KEY_ID to enable</span>
+                            {% endif %}
+                        </label>
+                    </div>
+                </div>
+                <div id="stripe-card-wrapper" class="mb-4 d-none">
+                    <label class="form-label">Card details</label>
+                    <div class="border rounded p-3" id="card-element"></div>
+                    <div id="card-errors" class="text-danger small mt-2"></div>
+                </div>
+                <button class="btn btn-primary w-100" id="checkout-submit-btn">
+                    <span class="default-label">Place order</span>
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Order Summary</div>
+            <div class="card-body">
+                {% for item in cart.items.all %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>{{ item.product.title }} × {{ item.quantity }}</span>
+                    <span>₹{{ item.line_total }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted">Your cart is empty.</p>
+                {% endfor %}
+                <hr>
+                <div class="d-flex justify-content-between fw-semibold">
+                    <span>Subtotal</span>
+                    <span>₹{{ cart.subtotal }}</span>
+                </div>
+                <small class="text-muted">Coupons, delivery fee and payment charges (if any) apply at confirmation.</small>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="checkout-status" class="alert d-none mt-4" role="alert"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="{% static 'js/checkout.js' %}"></script>
+{% endblock %}
+

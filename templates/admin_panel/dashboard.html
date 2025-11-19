@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Analytics Dashboard</h1>
+    <div class="btn-group">
+        <a href="{% url 'admin_panel:export_orders' %}?days={{ days }}" class="btn btn-outline-primary btn-sm">
+            Export Orders CSV
+        </a>
+        <a href="{% url 'admin_panel:export_products' %}" class="btn btn-outline-primary btn-sm">
+            Export Products CSV
+        </a>
+    </div>
+</div>
+
+<!-- Time Period Selector -->
+<div class="mb-3">
+    <form method="get" class="d-inline">
+        <label for="days" class="form-label">Time Period:</label>
+        <select name="days" id="days" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
+            <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+            <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+            <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+            <option value="365" {% if days == 365 %}selected{% endif %}>Last year</option>
+        </select>
+    </form>
+</div>
+
+<!-- Key Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-bg-primary">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">Total Sales</h6>
+                <h3 class="card-title">₹{{ total_sales|floatformat:2|intcomma }}</h3>
+                <small class="text-white-50">
+                    {% if sales_growth >= 0 %}+{% endif %}{{ sales_growth|floatformat:1 }}% vs previous period
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-success">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">Orders</h6>
+                <h3 class="card-title">{{ order_count|intcomma }}</h3>
+                <small class="text-white-50">
+                    {% if order_growth >= 0 %}+{% endif %}{{ order_growth|floatformat:1 }}% vs previous period
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-info">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">Avg Order Value</h6>
+                <h3 class="card-title">₹{{ avg_order_value|floatformat:2|intcomma }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-warning">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">New Customers</h6>
+                <h3 class="card-title">{{ customer_metrics.new_customers|intcomma }}</h3>
+                <small class="text-white-50">{{ customer_metrics.repeat_customers }} repeat customers</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Daily Sales & Orders</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailySalesChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Payment Methods</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="paymentMethodsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Sales by Category</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categorySalesChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Products</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Revenue</th>
+                                <th>Orders</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'store:product_detail' product.slug %}">{{ product.title|truncatewords:5 }}</a>
+                                </td>
+                                <td>{{ product.quantity|intcomma }}</td>
+                                <td>₹{{ product.revenue|floatformat:2|intcomma }}</td>
+                                <td>{{ product.orders }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No data</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Tables -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Orders</h5>
+                <span class="badge bg-secondary">{{ recent_orders|length }}</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Customer</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>#{{ order.id }}</td>
+                                <td>{{ order.user }}</td>
+                                <td>₹{{ order.total|floatformat:2 }}</td>
+                                <td><span class="badge bg-{{ order.status|lower }}">{{ order.status }}</span></td>
+                                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No orders</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Inventory Alerts</h5>
+                <span class="badge bg-danger">{{ inventory_alerts|length }}</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in inventory_alerts %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'store:product_detail' product.slug %}">{{ product.title|truncatewords:5 }}</a>
+                                </td>
+                                <td>{{ product.category }}</td>
+                                <td>
+                                    <span class="badge bg-{% if product.stock == 0 %}danger{% elif product.stock <= 2 %}warning{% else %}info{% endif %}">
+                                        {{ product.stock }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-success">All products well stocked!</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ daily_sales|json_script:"daily-sales-data" }}
+{{ payment_stats|json_script:"payment-stats-data" }}
+{{ category_sales|json_script:"category-sales-data" }}
+
+<script>
+// Parse JSON data
+const dailySalesData = JSON.parse(document.getElementById('daily-sales-data').textContent);
+const paymentStatsData = JSON.parse(document.getElementById('payment-stats-data').textContent);
+const categorySalesData = JSON.parse(document.getElementById('category-sales-data').textContent);
+
+// Daily Sales Chart
+const dailySalesCtx = document.getElementById('dailySalesChart');
+new Chart(dailySalesCtx, {
+    type: 'line',
+    data: {
+        labels: dailySalesData.labels,
+        datasets: [
+            {
+                label: 'Sales (₹)',
+                data: dailySalesData.sales,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                yAxisID: 'y',
+            },
+            {
+                label: 'Orders',
+                data: dailySalesData.orders,
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                yAxisID: 'y1',
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                grid: {
+                    drawOnChartArea: false,
+                },
+            },
+        }
+    }
+});
+
+// Payment Methods Chart
+const paymentMethodsCtx = document.getElementById('paymentMethodsChart');
+new Chart(paymentMethodsCtx, {
+    type: 'doughnut',
+    data: {
+        labels: paymentStatsData.labels,
+        datasets: [{
+            data: paymentStatsData.totals,
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)',
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            }
+        }
+    }
+});
+
+// Category Sales Chart
+const categorySalesCtx = document.getElementById('categorySalesChart');
+new Chart(categorySalesCtx, {
+    type: 'bar',
+    data: {
+        labels: categorySalesData.labels,
+        datasets: [{
+            label: 'Sales (₹)',
+            data: categorySalesData.sales,
+            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false,
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

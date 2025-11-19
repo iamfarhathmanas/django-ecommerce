@@ -1,0 +1,17 @@
+Hi {{ order.user.first_name|default:order.user.username }},
+
+Thanks for shopping with {{ app_name }}! Your order #{{ order.id }} has been received.
+
+Items:
+{% for item in order.items.all %}
+- {{ item.product_title }} × {{ item.quantity }}
+{% endfor %}
+
+We'll notify you when payment is confirmed and the package ships.
+
+Ship to:
+{{ order.shipping_address.full_name }}
+{{ order.shipping_address.address_line_1 }}
+{{ order.shipping_address.city }}, {{ order.shipping_address.state }} {{ order.shipping_address.postal_code }}
+— The {{ app_name }} Team
+
