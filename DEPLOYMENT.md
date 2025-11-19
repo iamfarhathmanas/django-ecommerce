@@ -46,8 +46,9 @@ git push origin main
    - **Runtime**: `Python 3`
    - **Build Command**: 
      ```
-     pip install -r requirements.txt && python manage.py collectstatic --noinput
+     chmod +x build.sh && ./build.sh
      ```
+     (This automatically runs migrations, creates superuser, and seeds products)
    - **Start Command**: 
      ```
      gunicorn config.wsgi:application
@@ -63,6 +64,13 @@ git push origin main
    DATABASE_URL=<paste-internal-database-url-from-step-2>
    ```
 
+   **For Auto Superuser Creation (Optional but Recommended):**
+   ```
+   ADMIN_USERNAME=admin
+   ADMIN_EMAIL=your-email@example.com
+   ADMIN_PASSWORD=YourSecurePassword123!
+   ```
+
    **Optional (but recommended):**
    ```
    APP_NAME=E-Shop
@@ -75,19 +83,16 @@ git push origin main
 
 6. Click **"Create Web Service"**
 
-## Step 4: Run Migrations
+## Step 4: Automatic Setup (No Shell Needed!)
 
-After your service is deployed:
+The build script automatically handles:
+- ✅ Database migrations
+- ✅ Superuser creation (if ADMIN_PASSWORD is set)
+- ✅ Product seeding (50 products)
 
-1. Go to your Web Service in Render dashboard
-2. Click on **"Shell"** tab
-3. Run these commands:
+**No manual commands needed!** Everything runs during deployment.
 
-   ```bash
-   python manage.py migrate
-   python manage.py createsuperuser
-   python manage.py seed_products --count=50
-   ```
+**Note:** If you didn't set `ADMIN_PASSWORD`, you can still create a superuser later using Django admin or by setting the environment variable and redeploying.
 
 ## Step 5: Access Your Site
 
@@ -124,6 +129,8 @@ https://your-app-name.onrender.com
 - Check build logs in Render dashboard
 - Ensure all dependencies are in `requirements.txt`
 - Verify Python version in `runtime.txt`
+- Make sure `build.sh` has execute permissions (the build command handles this)
+- Check that `DATABASE_URL` is set correctly
 
 ### Static Files Not Loading:
 - Ensure `collectstatic` runs in build command
