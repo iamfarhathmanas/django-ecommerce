@@ -37,7 +37,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 APP_NAME = os.getenv("APP_NAME", "E-Shop")
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-me")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "9d9fc3970c6444d5c67fbbb25ffe042b")
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
@@ -108,7 +108,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Support for Render PostgreSQL via DATABASE_URL
 database_url = os.getenv("DATABASE_URL", "").strip()
 
-if database_url and database_url.startswith("postgres://") or database_url.startswith("postgresql://"):
+if database_url and (database_url.startswith("postgres://") or database_url.startswith("postgresql://")):
     import dj_database_url
     try:
         DATABASES = {
