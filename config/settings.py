@@ -106,15 +106,27 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 # Support for Render PostgreSQL via DATABASE_URL
-if os.getenv("DATABASE_URL"):
+database_url = os.getenv("DATABASE_URL", "").strip()
+
+if database_url and database_url.startswith("postgres://") or database_url.startswith("postgresql://"):
     import dj_database_url
-    DATABASES = {
-        "default": dj_database_url.config(
-            default=os.getenv("DATABASE_URL"),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
+    try:
+        DATABASES = {
+            "default": dj_database_url.config(
+                default=database_url,
+                conn_max_age=600,
+                conn_health_checks=True,
+            )
+        }
+    except Exception as e:
+        # Fallback to SQLite if DATABASE_URL is invalid
+        print(f"Warning: DATABASE_URL parsing failed: {e}. Using SQLite fallback.")
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 else:
     # Fallback to environment variables or SQLite
     db_engine = os.getenv("DB_ENGINE", "django.db.backends.sqlite3")
@@ -133,7 +145,6 @@ else:
             "OPTIONS": db_options,
         }
     }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
