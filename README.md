@@ -63,7 +63,7 @@ The command creates:
 Create a `.env` file (or set env vars another way) with values like:
 
 ```env
-APP_NAME=E-Shop
+APP_NAME=Manas Shop
 DJANGO_SECRET_KEY=your-key
 DJANGO_DEBUG=true
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1

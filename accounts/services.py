@@ -17,7 +17,7 @@ def generate_otp(user: User, purpose: str) -> OneTimePassword:
         purpose=purpose,
         expires_at=expiry,
     )
-    subject = f"{settings.APP_NAME if hasattr(settings, 'APP_NAME') else 'E-Shop'} OTP"
+    subject = f"{settings.APP_NAME if hasattr(settings, 'APP_NAME') else 'Manas Shop'} OTP"
     send_mail(subject, f"Your OTP is {code}", None, [user.email], fail_silently=True)
     return otp
 

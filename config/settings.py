@@ -36,7 +36,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
-APP_NAME = os.getenv("APP_NAME", "E-Shop")
+APP_NAME = os.getenv("APP_NAME", "Manas Shop")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "9d9fc3970c6444d5c67fbbb25ffe042b")
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")

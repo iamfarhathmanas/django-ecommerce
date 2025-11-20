@@ -73,7 +73,7 @@ git push origin main
 
    **Optional (but recommended):**
    ```
-   APP_NAME=E-Shop
+   APP_NAME=Manas Shop
    REDIS_URL=<if-using-redis>
    STRIPE_SECRET_KEY=<your-stripe-key>
    STRIPE_PUBLIC_KEY=<your-stripe-key>

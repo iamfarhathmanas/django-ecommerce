@@ -158,9 +158,7 @@ class SearchService:
             if cached is not None:
                 # Return queryset from cached IDs
                 product_ids = cached
-                return Product.objects.filter(id__in=product_ids).order_by(
-                    *[f"-{ordering}"] if ordering.startswith("-") else [ordering]
-                )
+                return Product.objects.filter(id__in=product_ids).order_by(ordering)
 
         # Build base queryset
         qs = Product.objects.filter(is_published=True).select_related("category").prefetch_related("tags", "images")
